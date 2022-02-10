@@ -24,13 +24,20 @@ class MyPlugin(StellarPlayer.IStellarPlayerPlugin):
     def start(self):
         super().start()
 
-    def onUrlInput(self, url):
-        print(url)
+    def onUrlInput(self, *a):
+        dispatchId = None
+        if hasattr(self.player, 'dispatchResult'):
+            dispatchId, url = a
+        else:
+            url, = a
+
+        print(f'{dispatchId=}, {url=}')
 
         # monkey patch: get print content
         old_stdout = sys.stdout
         sys.stdout = buffer = io.StringIO()
         argv = sys.argv[:]
+        result = []
         try:
             sys.argv.append('--json')        
             sys.argv.append('--debug')    
@@ -58,8 +65,7 @@ class MyPlugin(StellarPlayer.IStellarPlayerPlugin):
             if 'ua' in extra:
                 headers['user_agent'] = extra['ua']
 
-            title = j.get('title')
-            result = []
+            title = j.get('title')            
             for k, v in j['streams'].items():
                 src = []
                 if type(v['src']) == str:
@@ -78,12 +84,17 @@ class MyPlugin(StellarPlayer.IStellarPlayerPlugin):
                     })
 
             result.sort(key=lambda x: x['size'], reverse=True)
-            self.player.urlResult(url, result)
         except:
             import traceback
             traceback.print_exc()
             sys.argv = ['']
             sys.stdout = old_stdout
+            result = []
+
+        if dispatchId is None:
+            self.player.urlResult(url, result)
+        else:
+            self.player.dispatchResult(dispatchId, url=url, result=result)
 
 
 def newPlugin(player: StellarPlayer.IStellarPlayer, *arg):
