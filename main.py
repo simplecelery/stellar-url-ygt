@@ -10,10 +10,14 @@ plugin_dir = os.path.dirname(__file__)
 
 sys.path.append(plugin_dir)
 
+class TextIOWrapper:
+    def __new__(cls, x, **kwargs):
+        return x
+
 # monkey patch : don't call TextIOWrapper
 sys.stdout.isatty = lambda: False
 sys.stdout.buffer = sys.stdout
-io.TextIOWrapper = lambda x, **k: x  
+io.TextIOWrapper = TextIOWrapper 
 from you_get import common, json_output
 
 
